@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--bg)}
+#t{position:absolute;left:28px;bottom:22px;font:600 26px Georgia,serif;color:#5a4a46;letter-spacing:.5px}
+#s{position:absolute;left:28px;bottom:58px;font:15px Georgia,serif;color:#8a7570;text-transform:uppercase;letter-spacing:2px}
+</style>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+</head><body><div id="s"></div><div id="t"></div>
+<script type="module">
+import * as THREE from 'three';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const id = new URLSearchParams(location.search).get('id') || 'heart';
+const W = innerWidth, H = innerHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, W / H, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9c8c0, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(3, 6, 4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = 6;
+Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4 });
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.18 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+const font = await new Promise(r => new FontLoader().load('/fonts/bold.json', r));
+
+// ---------- helpers ----------
+const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0, ...o });
+function add(geo, m, parent = scene) {
+  const mesh = new THREE.Mesh(geo, m); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh); return mesh;
+}
+function heartShape(s = 1) {
+  // classic heart, re-centered and flipped upright
+  const p = [[5,5],[5,5,4,0,0,0],[-6,0,-6,7,-6,7],[-6,11,-3,15.4,5,19],[12,15.4,16,11,16,7],[16,7,16,0,10,0],[7,0,5,5,5,5]];
+  const T = (x, y) => [(x - 5) * s * 0.1, -(y - 9.5) * s * 0.1];
+  const sh = new THREE.Shape(); sh.moveTo(...T(...p[0]));
+  for (let i = 1; i < p.length; i++) { const q = p[i]; sh.bezierCurveTo(...T(q[0], q[1]), ...T(q[2], q[3]), ...T(q[4], q[5])); }
+  return sh;
+}
+function starShape(R, r = R * 0.45, n = 5) {
+  const sh = new THREE.Shape();
+  for (let i = 0; i <= n * 2; i++) {
+    const a = Math.PI / 2 + i * Math.PI / n, rr = i % 2 ? r : R;
+    i ? sh.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : sh.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  return sh;
+}
+const extrude = (shape, depth, bevel = 0.02) => new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 4, curveSegments: 32 });
+function text(str, size, depth, m, parent = scene) {
+  const g = new TextGeometry(str, { font, size, depth, curveSegments: 10, bevelEnabled: true, bevelThickness: size * 0.03, bevelSize: size * 0.02, bevelSegments: 3 });
+  g.computeBoundingBox(); const b = g.boundingBox;
+  g.translate(-(b.max.x + b.min.x) / 2, -(b.max.y + b.min.y) / 2, 0);
+  return add(g, m, parent);
+}
+function rod(a, b, r, m, parent = scene) {
+  const d = new THREE.Vector3().subVectors(b, a); const len = d.length();
+  const mesh = add(new THREE.CylinderGeometry(r, r, len, 8), m, parent);
+  mesh.position.copy(a).addScaledVector(d, 0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  return mesh;
+}
+function confetti(n, cx, cy, cz, rad, colors, parent = scene) {
+  const g = new THREE.SphereGeometry(0.07, 20, 14); g.scale(1, 0.72, 0.72);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * rad;
+    const m = add(g, mat(colors[i % colors.length], { roughness: 0.25 }), parent);
+    m.position.set(cx + Math.cos(a) * r, cy + Math.random() * 0.06, cz + Math.sin(a) * r);
+    m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+  }
+}
+function setCam(px, py, pz, tx, ty, tz) { camera.position.set(px, py, pz); camera.lookAt(tx, ty, tz); }
+function label(sub, title, bg) {
+  document.getElementById('s').textContent = sub; document.getElementById('t').textContent = title;
+  document.body.style.setProperty('--bg', bg);
+}
+
+// ---------- concepts ----------
+const scenes = {
+  heart() {
+    label('Matrimonio · Anniversario', 'Scrigno a cuore porta-confetti', 'radial-gradient(circle at 50% 40%,#fff6f3,#f4d9d3)');
+    const pink = mat(0xf2b8b5, { roughness: 0.6 });
+    const outer = heartShape(1);
+    const inner = heartShape(0.82); outer.holes.push(new THREE.Path(inner.getPoints(64).reverse()));
+    const wall = add(extrude(outer, 0.45, 0.02), pink); wall.rotation.x = -Math.PI / 2; wall.position.y = 0.02;
+    const floor = add(extrude(heartShape(1), 0.06, 0.02), pink); floor.rotation.x = -Math.PI / 2; floor.position.y = 0.02;
+    confetti(38, 0, 0.35, 0.05, 0.62, [0xffffff, 0xfdf3e7, 0xe6e6ea]);
+    // lid, propped open
+    const lid = new THREE.Group(); scene.add(lid);
+    const top = add(extrude(heartShape(1.04), 0.1, 0.03), mat(0xf6c9c6, { roughness: 0.5 }), lid); top.rotation.x = -Math.PI / 2;
+    const t = text('S & L', 0.24, 0.05, mat(0xffffff, { roughness: 0.4 }), lid); t.rotation.x = -Math.PI / 2; t.position.set(0, 0.14, 0.1);
+    lid.position.set(0.25, 0.95, -1.15); lid.rotation.set(0.75, -0.1, 0.05);
+    setCam(0.4, 3.6, 5.0, 0, 0.45, -0.35);
+  },
+  balloon() {
+    label('Battesimo · Nascita', 'Mongolfiera porta-confetti', 'radial-gradient(circle at 50% 35%,#f4fbff,#cfe4f1)');
+    const pts = [];
+    for (let i = 0; i <= 40; i++) {
+      const a = -Math.PI / 2 + (i / 40) * Math.PI;
+      let r = Math.cos(a), y = Math.sin(a);
+      if (a < 0) { const k = -Math.sin(a); r *= 1 - 0.55 * Math.pow(k, 1.4); y *= 1.35; }
+      pts.push(new THREE.Vector2(Math.max(r, 0.18), y));
+    }
+    const balloon = new THREE.Group(); scene.add(balloon);
+    const cols = [0xa9d3ee, 0xffffff];
+    for (let i = 0; i < 10; i++) {
+      const g = new THREE.LatheGeometry(pts, 12, (i / 10) * Math.PI * 2, Math.PI * 2 / 10);
+      add(g, mat(cols[i % 2], { side: THREE.DoubleSide, roughness: 0.5 }), balloon);
+    }
+    balloon.scale.setScalar(0.85); balloon.position.y = 2.75;
+    const bottomY = 2.75 - 1.35 * 0.85;
+    const ring = add(new THREE.TorusGeometry(0.17, 0.025, 10, 30), mat(0xd9b78a), balloon); ring.rotation.x = Math.PI / 2; ring.position.y = -1.35;
+    // basket
+    const wood = mat(0xd9b78a, { roughness: 0.8 });
+    const basket = add(new THREE.CylinderGeometry(0.42, 0.34, 0.45, 32, 1, true), wood); basket.position.y = 0.225;
+    basket.material.side = THREE.DoubleSide;
+    add(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 32), wood).position.y = 0.015;
+    for (const y of [0.1, 0.22, 0.34]) { const b = add(new THREE.TorusGeometry(0.38 + (y - 0.22) * 0.18, 0.018, 8, 40), mat(0xc49a66)); b.rotation.x = Math.PI / 2; b.position.y = y; }
+    const rim = add(new THREE.TorusGeometry(0.42, 0.035, 10, 40), mat(0xc49a66)); rim.rotation.x = Math.PI / 2; rim.position.y = 0.45;
+    confetti(22, 0, 0.42, 0, 0.3, [0xffffff, 0xa9d3ee, 0xffffff]);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + i * Math.PI / 2;
+      rod(new THREE.Vector3(Math.cos(a) * 0.4, 0.45, Math.sin(a) * 0.4), new THREE.Vector3(Math.cos(a) * 0.15, bottomY, Math.sin(a) * 0.15), 0.012, mat(0xb08b5e));
+    }
+    const tag = text('Leo', 0.17, 0.05, mat(0x4f8fbd), scene); tag.position.set(0, 0.25, 0.42); tag.rotation.x = 0.1;
+    // little clouds
+    const cloud = mat(0xffffff, { roughness: 0.9 });
+    for (const [x, y, z, s] of [[-1.3, 2.3, -0.5, 1], [1.2, 1.4, -0.3, 0.8]]) {
+      for (const [dx, dy, r] of [[0, 0, 0.22], [0.22, 0.05, 0.18], [-0.22, -0.02, 0.17], [0.08, 0.15, 0.17]]) add(new THREE.SphereGeometry(r * s, 24, 16), cloud).position.set(x + dx * s, y + dy * s, z);
+    }
+    setCam(0, 2.2, 8.4, 0, 1.75, 0);
+  },
+  succulent() {
+    label('Matrimonio green · Comunione', 'Vasetto low-poly con piantina grassa', 'radial-gradient(circle at 50% 40%,#f8faf3,#dbe6d2)');
+    const pot = add(new THREE.CylinderGeometry(0.72, 0.5, 1.0, 7, 1), mat(0xe8e4dc, { flatShading: true, roughness: 0.7 })); pot.position.y = 0.5;
+    const soil = add(new THREE.CylinderGeometry(0.66, 0.66, 0.04, 7), mat(0x6b4f3b, { roughness: 1 })); soil.position.y = 0.95;
+    const leafG = new THREE.SphereGeometry(1, 20, 12); leafG.scale(0.13, 0.06, 0.36); leafG.translate(0, 0, 0.32);
+    const rings = [[9, 0.15, 0.95, 0x8fb996], [7, 0.55, 0.78, 0x9cc7a2], [5, 0.95, 0.55, 0xb3d6b3], [3, 1.3, 0.35, 0xc8e3c3]];
+    rings.forEach(([n, tilt, s, c], k) => {
+      for (let i = 0; i < n; i++) {
+        const l = add(leafG, mat(c, { roughness: 0.45 }));
+        l.position.y = 1.0 + k * 0.04; l.rotation.order = 'YXZ'; l.rotation.y = (i / n) * Math.PI * 2 + k * 0.4; l.rotation.x = -tilt; l.scale.setScalar(s);
+      }
+    });
+    // "grazie" flag
+    rod(new THREE.Vector3(0.38, 0.95, 0.12), new THREE.Vector3(0.52, 1.75, 0.18), 0.012, mat(0xc9a46b));
+    const plate = add(new RoundedBoxGeometry(0.62, 0.22, 0.03, 3, 0.02), mat(0xffffff)); plate.position.set(0.8, 1.62, 0.2); plate.rotation.z = 0.08;
+    const t = text('grazie', 0.1, 0.02, mat(0x7aa37f), scene); t.position.set(0.8, 1.62, 0.225); t.rotation.z = 0.08;
+    // second pot, different color, behind
+    const pot2 = add(new THREE.CylinderGeometry(0.5, 0.36, 0.7, 6, 1), mat(0xe9b9a4, { flatShading: true, roughness: 0.7 })); pot2.position.set(-1.25, 0.35, -0.7);
+    add(new THREE.CylinderGeometry(0.46, 0.46, 0.04, 6), mat(0x6b4f3b)).position.set(-1.25, 0.67, -0.7);
+    for (let i = 0; i < 6; i++) { const l = add(leafG, mat(0x8fb996)); l.position.set(-1.25, 0.7, -0.7); l.rotation.order = 'YXZ'; l.rotation.y = i; l.rotation.x = -0.7; l.scale.setScalar(0.55); }
+    setCam(0.6, 2.4, 5.4, -0.15, 0.85, 0);
+  },
+  lantern() {
+    label('Matrimonio', 'Lanterna porta-tealight con cuori traforati', 'radial-gradient(circle at 50% 45%,#5b4a55,#2a2228)');
+    scene.children.filter(o => o.isHemisphereLight)[0].intensity = 0.55; sun.intensity = 0.6;
+    ground.material.opacity = 0.3; sun.castShadow = false; document.getElementById('t').style.color = '#f3e6d8'; document.getElementById('s').style.color = '#c9b4a6';
+    const white = mat(0xf7f3ee, { roughness: 0.65 });
+    const w = 0.9, h = 1.5, ap = w / (2 * Math.tan(Math.PI / 6));
+    for (let i = 0; i < 6; i++) {
+      const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(w / 2, h); sh.lineTo(-w / 2, h); sh.lineTo(-w / 2, 0);
+      const hs = heartShape(0.28); const pts = hs.getPoints(48).map(p => new THREE.Vector2(p.x, p.y + h * 0.5));
+      sh.holes.push(new THREE.Path(pts.reverse()));
+      for (const [x, y, s] of [[-0.22, 0.25, 0.1], [0.22, 0.25, 0.1], [0, 1.27, 0.11]]) {
+        const p2 = heartShape(s).getPoints(32).map(p => new THREE.Vector2(p.x + x, p.y + y)); sh.holes.push(new THREE.Path(p2.reverse()));
+      }
+      const g = extrude(sh, 0.05, 0.008); g.translate(0, 0, -0.025);
+      const a = Math.PI / 6 + i * Math.PI / 3;
+      const panel = add(g, white); panel.position.set(Math.sin(a) * ap, 0.1, Math.cos(a) * ap); panel.rotation.y = a;
+    }
+    const rc = w / (2 * Math.sin(Math.PI / 6));
+    add(new THREE.CylinderGeometry(rc + 0.06, rc + 0.08, 0.1, 6), white).position.y = 0.05;
+    add(new THREE.CylinderGeometry(rc + 0.04, rc + 0.06, 0.08, 6), white).position.y = h + 0.14;
+    const handle = add(new THREE.TorusGeometry(0.25, 0.03, 12, 40, Math.PI), white); handle.position.y = h + 0.18;
+    // tealight
+    add(new THREE.CylinderGeometry(0.2, 0.2, 0.16, 32), mat(0xdedede, { metalness: 0.8, roughness: 0.3 })).position.y = 0.18;
+    const flame = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffd27a }));
+    flame.scale.set(1, 2.2, 1); flame.position.y = 0.36; scene.add(flame);
+    const pl = new THREE.PointLight(0xffb45a, 9, 12, 1.4); pl.position.y = 0.42; pl.castShadow = true; pl.shadow.mapSize.set(2048, 2048); pl.shadow.radius = 3; scene.add(pl);
+    const t = text('Anna & Marco', 0.14, 0.03, mat(0xe8d3b0, { roughness: 0.4, metalness: 0.3 })); t.position.set(0, 0.06, rc + 0.3); t.rotation.x = -Math.PI / 2;
+    setCam(0, 2.6, 6.3, 0, 0.6, 0);
+  },
+  cloud() {
+    label('Nascita · Baby shower', 'Nuvola lucina notturna con luna e stelle', 'radial-gradient(circle at 50% 40%,#fbf7ff,#e2d9ef)');
+    const c = mat(0xffffff, { roughness: 0.7 });
+    const cl = new THREE.Group(); scene.add(cl);
+    for (const [x, y, r] of [[-0.75, 0.45, 0.45], [-0.1, 0.8, 0.62], [0.65, 0.6, 0.5], [1.05, 0.35, 0.35], [-1.15, 0.28, 0.28]]) {
+      const d = add(new THREE.CylinderGeometry(r, r, 0.35, 48), c, cl); d.rotation.x = Math.PI / 2; d.position.set(x, y, 0);
+    }
+    add(new RoundedBoxGeometry(2.6, 0.32, 0.35, 4, 0.06), c, cl).position.set(-0.05, 0.16, 0);
+    const t = text('Leo', 0.38, 0.06, mat(0xb9a6d8, { roughness: 0.4 }), cl); t.position.set(-0.1, 0.55, 0.17);
+    // crescent moon
+    const m = new THREE.Shape(); const R = 0.5;
+    m.moveTo(R * Math.cos(Math.PI / 3), R * Math.sin(Math.PI / 3));
+    m.absarc(0, 0, R, Math.PI / 3, Math.PI * 5 / 3, false);
+    const ir = Math.hypot(0.2, R * Math.sin(Math.PI / 3)), ia = Math.atan2(R * Math.sin(Math.PI / 3), -0.2);
+    m.absarc(0.45, 0, ir, 2 * Math.PI - ia, ia, true);
+    const moon = add(extrude(m, 0.14, 0.03), mat(0xf6e3a1, { roughness: 0.45 })); moon.position.set(2.15, 0.52, 0.1); moon.rotation.set(0, -0.3, -0.35);
+    const gold = mat(0xf2d27e, { roughness: 0.35, metalness: 0.2 });
+    for (const [x, y, z, s, rz] of [[-1.7, 0.18, 0.4, 0.2, 0.3], [0.9, 0.12, 0.7, 0.13, -0.2], [-0.6, 0.1, 0.85, 0.1, 0.6]]) {
+      const st = add(extrude(starShape(s), 0.06, 0.015), gold); st.position.set(x, y, z); st.rotation.set(-Math.PI / 2 + 0.05, 0, rz);
+    }
+    const glow = new THREE.PointLight(0xfff0d0, 2, 3); glow.position.set(0, 0.6, -0.6); scene.add(glow);
+    setCam(0.3, 2.0, 7.0, 0.25, 0.45, 0);
+  },
+  placecard() {
+    label('Matrimonio · Cresima · Comunione', 'Segnaposto personalizzato con nome', 'radial-gradient(circle at 50% 40%,#fffaf2,#efe2cf)');
+    const names = [['Sofia', -1.25, -0.75, 0.25, mat(0xa7bfa2)], ['Giulia', 1.3, -0.7, -0.25, mat(0xeab8b0)], ['Marco', 0.05, 0.65, 0.0, mat(0xe9d7b5)]];
+    for (const [n, x, z, ry, m] of names) {
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+      const t = text(n, 0.34, 0.08, m, g); t.geometry.computeBoundingBox(); const tw = t.geometry.boundingBox.max.x - t.geometry.boundingBox.min.x;
+      t.position.set(-0.15, 0.33, -0.02); t.rotation.x = -0.1;
+      const base = add(new RoundedBoxGeometry(tw + 0.7, 0.14, 0.42, 4, 0.04), m, g); base.position.set(0, 0.07, 0);
+      const h = add(extrude(heartShape(0.24), 0.06, 0.012), mat(0xffffff), g); h.position.set(tw / 2 + 0.12, 0.3, 0); base.position.x = 0.1; h.rotation.z = -0.15;
+    }
+    setCam(0.2, 3.2, 6.2, 0, 0.2, -0.1);
+  },
+};
+scenes[id]();
+renderer.render(scene, camera);
+window.__done = true;
+</script></body></html>
