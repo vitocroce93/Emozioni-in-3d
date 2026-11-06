@@ -1,67 +1,62 @@
 # Portachiavi PIN-UP Cafe con gettone per carrello
 
+Versione per **ugello 0,4 mm** e **un filamento alla volta**.
+
 ![Fronte](anteprime/fronte.png)
 
-## Cosa contiene
+## I due pezzi
 
 | Pezzo | Misure | Logo |
 |---|---|---|
-| **Portachiavi** | 58 × 28 × 6 mm, foro per anello Ø 5 mm | logo lungo "PIN-UP Cafe" sul davanti |
-| **Gettone** | Ø 23,25 × 2,33 mm, come una moneta da 1 € | logo tondo su entrambe le facce |
+| **Portachiavi** (`stl/portachiavi.stl`) | 58 × 28 × 5,6 mm, foro chiavi Ø 5 mm | logo lungo **in rilievo** (0,6 mm) sul davanti |
+| **Gettone** (`stl/gettone.stl`) | Ø 23,25 × 2,33 mm, come una moneta da 1 € | logo tondo **inciso** (0,4 mm) su entrambe le facce |
 
-Il gettone si incastra a scatto in un anello sul retro del portachiavi:
+## Come funziona l'incastro
 
-- un **labbro** di 0,45 mm copre il bordo del gettone e lo tiene fermo;
-- due **fessure laterali** rendono l'anello elastico, così il gettone entra con un "clic";
-- un'**apertura** sul lato corto serve a infilare l'unghia e sfilare il gettone per usarlo nel carrello.
+Il gettone si **infila dentro** il portachiavi da una fessura sul lato corto, dalla parte opposta al foro per le chiavi.
 
-![Retro con gettone](anteprime/retro_con_gettone.png)
+![Inserimento](anteprime/inserimento.png)
 
-## File da stampare
+- Nel fondo c'è una **linguetta elastica** con un **dentino**. Mentre il gettone entra, la linguetta si abbassa. A gettone inserito scatta dietro il suo bordo e lo blocca: non esce da solo.
+- Per **toglierlo**, premi la linguetta dal retro con un dito e spingi il gettone verso l'uscita con il pollice, attraverso la **finestra rotonda** sul retro.
 
-- `portachiavi_pinup_multicolore.3mf`: **file consigliato**. Contiene entrambi i pezzi, già divisi per colore.
-- `stl/`: un file STL per ogni colore di ciascun pezzo, nel caso lo slicer non legga bene il 3MF.
+![Retro](anteprime/retro.png)
+![Sezione](anteprime/spaccato.png)
 
-### Colori
+## Stampa
 
-| Parte | Bianco | Blu | Grigio | Rosso |
-|---|---|---|---|---|
-| Portachiavi | `portachiavi_bianco.stl` | `portachiavi_blu.stl` | `portachiavi_grigio.stl` | – |
-| Gettone | `gettone_bianco.stl` | `gettone_blu.stl` | `gettone_grigio.stl` | `gettone_rosso.stl` |
+### Portachiavi: base bianca, scritta colorata
+- Va stampato **così com'è**, con il retro (la finestra) sul piatto e il logo verso l'alto. Non serve nessun supporto.
+- **Cambio colore a 5,0 mm**: in Bambu Studio, OrcaSlicer o PrusaSlicer, nell'anteprima strati vai allo strato **5,0–5,2 mm** e aggiungi un *cambio filamento* (il "+" accanto al cursore). Si stampa in bianco fino a lì, poi la stampante si ferma, carichi il rosso o il nero e riparte per la scritta.
+- Il tetto sopra il gettone è un **ponte** di circa 24 mm. Con il PLA e la ventola al massimo sui ponti viene bene.
+- Strato 0,2 mm, 3 perimetri, riempimento 20–30%.
 
-In Bambu Studio, OrcaSlicer o PrusaSlicer:
-1. Apri il 3MF. Se usi gli STL, selezionali tutti insieme e rispondi **"Sì"** alla domanda *"caricare come un unico oggetto con più parti?"*.
-2. Assegna a ogni parte il filamento del colore corrispondente.
-3. Non spostare né ruotare le singole parti: sono già allineate e orientate per la stampa.
+### Gettone
+- Stampa in un colore solo, piatto sul letto, nessun supporto.
+- Strato 0,2 mm, **riempimento 100%**: più rigido e più pesante, simile a una moneta.
+- Se il logo inciso sotto (quello a contatto col piatto) esce poco definito, metti `INCISO_SU_DUE_FACCE = False` in `genera_portachiavi.py`: resta inciso solo sopra.
 
-## Impostazioni di stampa consigliate
+## Regolazioni dopo la stampa di prova
 
-- **Materiale**: PLA o PETG. Il PETG è più elastico e tiene meglio lo scatto nel tempo.
-- **Ugello** 0,4 mm, **altezza strato 0,2 mm** (i loghi occupano esattamente 3 strati).
-- **Prima linea** a 0,2 mm (non 0,3): altrimenti il logo sul davanti si schiaccia.
-- **Piatto liscio o testurizzato**: sul liscio il logo esce lucido, sul testurizzato satinato.
-- Riempimento 100% per il gettone (più peso, sensazione di moneta vera); 30–40% per il portachiavi.
-- Nessun supporto.
-- Ironing (stiratura) sulla faccia superiore del gettone: facoltativo, la rende più liscia.
+Ogni stampante ha tolleranze diverse. Tutti i valori sono in cima a `genera_portachiavi.py`.
 
-## Note importanti
+| Problema | Cosa cambiare |
+|---|---|
+| Il gettone entra **troppo duro** | `DENTINO_ALTEZZA` 0,8 → 0,6, oppure `LINGUETTA_LUNGHEZZA` 11 → 13 |
+| Il gettone **esce da solo** | `DENTINO_ALTEZZA` 0,8 → 1,0 |
+| La sede è **troppo stretta** | `GIOCO_DIAMETRO` 0,4 → 0,6 |
+| Il gettone è **largo per il carrello** | `DIAMETRO_GETTONE` 23,25 → 23,1 |
 
-- **Dettagli del logo.** A queste dimensioni la scritta "FOOD · ON · MUSIC · ROW" del logo tondo sarebbe alta circa 0,6 mm e non si può stampare con un ugello da 0,4: è stata tolta. I contorni sottili sono stati ingrossati a 0,45–0,5 mm. La parola "Cafe" del gettone è al limite: va controllata sulla prima stampa di prova.
-- **Prova dello scatto.** Ogni stampante ha tolleranze diverse. Stampa una prova e:
-  - se il gettone è **troppo duro** da inserire, abbassa `SPORGENZA_LABBRO` (es. 0,35) o alza `GIOCO_DIAMETRO`;
-  - se è **troppo lento**, alza `SPORGENZA_LABBRO` (es. 0,55).
-- **Carrello.** Il gettone ha le stesse misure della moneta da 1 €. Se risulta un po' largo per alcuni carrelli, porta `DIAMETRO_GETTONE` a 23,1.
-
-## Modificare e rigenerare
-
-Tutte le misure sono parametri in cima a `genera_portachiavi.py`.
+Per rigenerare gli STL:
 
 ```bash
-pip install manifold3d trimesh opencv-python-headless scikit-image numpy
+pip install manifold3d trimesh opencv-python-headless numpy
 python3 genera_portachiavi.py
 ```
 
-Per rifare i livelli colore partendo da un logo nuovo (serve `potrace`):
+## Nota sul logo
+
+A queste dimensioni la scritta "FOOD · ON · MUSIC · ROW" del logo tondo sarebbe alta circa 0,6 mm: è stata tolta perché non è stampabile. I tratti sottili sono stati ingrossati ad almeno 0,45–0,5 mm. Per rifare i livelli del logo partendo da un'immagine nuova (serve `potrace`):
 
 ```bash
 cd loghi
