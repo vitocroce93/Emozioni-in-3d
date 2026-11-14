@@ -2,7 +2,7 @@
 """
 Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
 
-  hamburger  - 3D, colori a strati (cambio filamento a quote fisse)
+  hamburger  - 3D, stampato SCOMPOSTO (6 pezzi, ognuno di un colore) e montato con perno e clip
   sandwich   - 3D, tramezzino triangolare a strati con stecchino e oliva
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
@@ -93,30 +93,47 @@ def incidi_logo_sotto(corpo, sagoma, larghezza, centro=(0, 0), angolo=0):
     return corpo - estrudi(lg, PROF_LOGO + 0.01, -0.01)
 
 # ----------------------------------------------------------------- HAMBURGER (3D)
+# Stampato SCOMPOSTO: ogni pezzo in un solo colore, nessun cambio filamento.
+# Il pane sotto ha un perno esagonale che infila carne, formaggio, insalata e
+# pomodoro (l'esagono li tiene allineati) e termina con una clip a scatto che
+# si aggancia dentro il pane sopra.
+PERNO_ESAGONO = 8.0        # mm tra le facce piane
+GIOCO_FORO = 0.4           # foro dei pezzi intermedi = perno + gioco
+CLIP_D, CLIP_H = 8.0, 7.0  # parte tonda finale del perno (clip)
+CLIP_DENTE = 0.45          # sporgenza del dentino della clip
+CLIP_TAGLIO = 1.6          # fessura che rende elastiche le due metà
+
+def esagono(af):
+    return CrossSection.circle(af / np.sqrt(3), 6).rotate(30)
+
 def hamburger():
-    parti = []
-    # pane sotto: z 0-9, bordi arrotondati
-    pb = [(0, 0), (26, 0)] + [(26 + 4 * np.sin(a), 4 - 4 * np.cos(a)) for a in np.linspace(0, np.pi / 2, 10)][1:] \
-         + [(30, 7.5), (29.3, 9), (0, 9)]
+    Z_SOTTO, H_CARNE, H_FORM, H_INS, H_POM = 9.0, 10.0, 2.4, 3.0, 2.8
+    z_carne = Z_SOTTO
+    z_form = z_carne + H_CARNE
+    z_ins = z_form + H_FORM
+    z_pom = z_ins + H_INS
+    z0 = z_pom + H_POM                      # base del pane sopra
+    foro = esagono(PERNO_ESAGONO + GIOCO_FORO)
+
+    # --- pane sotto (bordo inferiore a 45 gradi: si stampa senza supporti) + perno con clip
+    pb = [(0, 0), (26.5, 0), (29.0, 2.5), (30.0, 4.5), (30.0, 7.5), (29.3, Z_SOTTO), (0, Z_SOTTO)]
     pane_sotto = rivoluzione(pb)
     pane_sotto = incidi_logo_sotto(pane_sotto, cerchio(28), 44)
-    parti.append(("pane", pane_sotto))
-    # carne: z 9-19, bordo irregolare
-    carne = estrudi(arrotonda(contorno_ondulato(31.5, 0.9, 23), 0.6), 10, 9)
-    parti.append(("carne", carne))
-    # formaggio: z 19-21.4, fetta quadrata con angoli che sporgono
-    formaggio = estrudi(arrotonda(CrossSection.square([48, 48], center=True).rotate(12), 3), 2.4, 19)
-    parti.append(("formaggio", formaggio))
-    # insalata: z 21.4-24.4, bordo ondulato
-    insalata = estrudi(contorno_ondulato(32, 2.4, 13), 3.0, 21.4)
-    parti.append(("insalata", insalata))
-    # pomodoro: z 24.4-27.2
-    pomodoro = estrudi(cerchio(29.5), 2.8, 24.4)
-    parti.append(("pomodoro", pomodoro))
-    # pane sopra: cupola z 27.2-51 + semi di sesamo
-    a, b, z0 = 31.0, 23.8, 27.2
-    prof = [(0, z0)] + [(a * np.cos(t), z0 + 1.5 + (b - 1.5) * np.sin(t)) for t in np.linspace(0, np.pi / 2, 40)]
-    prof = [(0, z0), (a - 1.5, z0)] + prof[1:]
+    perno = estrudi(esagono(PERNO_ESAGONO), z0 - Z_SOTTO + 0.02, Z_SOTTO - 0.01)
+    r, d = CLIP_D / 2, CLIP_DENTE
+    clip = rivoluzione([(0, 0), (r, 0), (r, 4.2), (r + d, 4.4), (r + d, 5.4), (r - 0.4, CLIP_H), (0, CLIP_H)])
+    clip = clip - Manifold.cube([CLIP_TAGLIO, 20, CLIP_H], center=True).translate([0, 0, CLIP_H / 2 + 1.2])
+    pane_sotto = pane_sotto + perno + clip.translate([0, 0, z0])
+
+    # --- pezzi intermedi con foro esagonale
+    carne = estrudi(arrotonda(contorno_ondulato(31.5, 0.9, 23), 0.6) - foro, H_CARNE, z_carne)
+    formaggio = estrudi(arrotonda(CrossSection.square([48, 48], center=True).rotate(12), 3) - foro, H_FORM, z_form)
+    insalata = estrudi(contorno_ondulato(32, 2.4, 13) - foro, H_INS, z_ins)
+    pomodoro = estrudi(cerchio(29.5) - foro, H_POM, z_pom)
+
+    # --- pane sopra: cupola + sesamo + anellino; sotto, la sede della clip con la scanalatura
+    a, b = 31.0, 23.8
+    prof = [(0, z0), (a - 1.5, z0)] + [(a * np.cos(t), z0 + 1.5 + (b - 1.5) * np.sin(t)) for t in np.linspace(0, np.pi / 2, 40)][1:]
     cupola = rivoluzione(prof)
     semi = Manifold()
     rng = np.random.default_rng(7)
@@ -126,11 +143,14 @@ def hamburger():
         z = z0 + 1.5 + (b - 1.5) * np.sin(ph)
         seme = Manifold.sphere(1.0, 16).scale([1.9, 1.1, 0.9]).rotate([0, 0, np.degrees(th) + rng.uniform(-40, 40)])
         semi = semi + seme.translate([x * 0.985, y * 0.985, z - 0.15])
-    parti.append(("pane", cupola + semi))
-    # anellino per appenderlo
     anello = Manifold.revolve(cerchio(1.9, (5.5, 0)), 0, 360).rotate([90, 0, 0]).translate([0, 0, z0 + b + 4.6])
-    parti.append(("pane", anello))
-    return unisci_per_colore(parti)
+    rs = r + 0.15
+    sede = rivoluzione([(0, -1), (rs, -1), (rs, 3.95), (rs + d + 0.15, 4.15), (rs + d + 0.15, 5.6),
+                        (rs, 6.3), (rs, CLIP_H + 0.4), (0, CLIP_H + 0.4)])
+    pane_sopra = cupola + semi + anello - sede.translate([0, 0, z0])
+
+    return [("pane", pane_sotto), ("carne", carne), ("formaggio", formaggio),
+            ("insalata", insalata), ("pomodoro", pomodoro), ("pane", pane_sopra)]
 
 # ----------------------------------------------------------------- SANDWICH (3D)
 def triangolo(lato, r):
@@ -370,6 +390,8 @@ def salva(nome, parti, cartella):
     print(f"{nome:11s} ingombro {b[3]-b[0]:.1f} x {b[4]-b[1]:.1f} x {b[5]-b[2]:.1f} mm  volume {tutto.volume()/1000:.1f} cm3")
     return {"parti": quote, "ingombro_mm": [round(b[3]-b[0], 1), round(b[4]-b[1], 1), round(b[5]-b[2], 1)]}
 
+KIT = {"hamburger"}   # addobbi stampati a pezzi separati
+
 def main():
     cartella = os.path.join(QUI, "parti"); os.makedirs(cartella, exist_ok=True)
     fq = os.path.join(cartella, "quote.json")
@@ -377,6 +399,7 @@ def main():
     for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("patatine", patatine)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
         tutti[nome] = salva(nome, f(), cartella)
+        tutti[nome]["kit"] = nome in KIT
     json.dump(tutti, open(fq, "w"), indent=1)
 
 if __name__ == "__main__":

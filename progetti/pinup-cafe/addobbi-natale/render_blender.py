@@ -94,7 +94,33 @@ def filo(sopra, lungh=3.0):
     bpy.ops.mesh.primitive_cylinder_add(radius=0.004, depth=lungh, location=(sopra.x, sopra.y, sopra.z + lungh / 2))
     bpy.context.object.data.materials.append(materiale("filo", "#C9A13B", 0.3))
 
-if VISTA in ("fronte", "retro"):
+if VISTA in ("esploso", "stampa"):
+    v, objs, piatto = importa(NOME)
+    bpy.context.view_layer.update()
+    if VISTA == "esploso":
+        for i, o in enumerate(objs):
+            o.location.z += i * 0.13 + (0.12 if i == len(objs) - 1 else 0)
+    else:   # pezzi appoggiati sul piatto come si stampano, in griglia 3 x 2
+        for i, o in enumerate(objs):
+            bpy.context.view_layer.update()
+            zmin = min((o.matrix_world @ Vector(c)).z for c in o.bound_box)
+            o.location = (((i % 3) - 1) * 0.78, (i // 3) * 0.78 - 0.39, -zmin)
+    c, dim = centro_ingombro(objs)
+    v.location -= c
+    mondo("#FBF6EE", 0.55)
+    if VISTA == "stampa":
+        bpy.ops.mesh.primitive_plane_add(size=3.0, location=(0, 0, -dim.z / 2 - 0.001))
+        bpy.context.object.data.materials.append(materiale("piatto_stampa", "#2B2B2E", 0.6))
+        sfondo("#F3E9DA")
+        camera((0.0, -3.6, 3.2), (0, 0.05, -0.15), 50)
+    else:
+        sfondo("#F3E9DA")
+        r = max(dim) * 2.6
+        camera((r * 0.25, -r * 0.95, r * 0.22), (0, 0, 0), 85)
+    luce_area("key", (-1.2, -1.6, 2.2), 260, 1.6, (1, 0.96, 0.9))
+    luce_area("fill", (1.6, -1.2, 0.6), 90, 2.0, (0.9, 0.95, 1))
+    luce_area("rim", (0.3, 1.6, 1.8), 120, 1.2)
+elif VISTA in ("fronte", "retro"):
     v, objs, piatto = importa(NOME)
     if VISTA == "retro":
         if piatto or NOME == "patatine": v.rotation_euler.z = math.radians(180)
