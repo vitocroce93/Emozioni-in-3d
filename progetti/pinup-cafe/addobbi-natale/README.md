@@ -1,9 +1,10 @@
 # Addobbi di Natale PIN-UP Cafe (bozze)
 
-Cinque addobbi da 6-8 cm per l'albero, con il logo PIN-UP inciso sul retro.
+Sei addobbi da 6-8 cm per l'albero, con il logo PIN-UP inciso sul retro.
 
 ![Tavola](rendering/tavola_completa.jpg)
 ![Pizza](rendering/pizza_fronte_retro.jpg)
+![Patatine](rendering/patatine_fronte_retro.jpg)
 ![Albero](rendering/albero_gruppo.jpg)
 
 | Addobbo | Tipo | Misure | Colori (cambio filamento a strati) |
@@ -12,6 +13,7 @@ Cinque addobbi da 6-8 cm per l'albero, con il logo PIN-UP inciso sul retro.
 | Tramezzino | 3D | 71 × 63 × 44 mm | pane, prosciutto, formaggio, insalata, pane, oliva |
 | Polpo | piatto, 5,8 mm | 65 × 73 mm | rosso + dettagli bianchi + dettagli neri |
 | Pesciolino | piatto, 5,8 mm | 71 × 51 mm | azzurro + dettagli bianchi + dettagli neri |
+| Patatine | 3D | 42 × 23 × 76 mm | cartoccio rosso (stelle davanti, logo dietro), fascia bianca, patatine gialle |
 | Pizza | piatto, 6,2 mm | 54 × 71 mm | impasto, salsa, mozzarella, salame (salsa e salame possono usare lo stesso rosso) |
 
 Sono **bozze per i rendering**: dopo l'approvazione si preparano i file 3MF di stampa, con le quote dei cambi colore.

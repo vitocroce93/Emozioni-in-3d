@@ -6,6 +6,7 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   sandwich   - 3D, tramezzino triangolare a strati con stecchino e oliva
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
+  patatine   - 3D, cartoccio rosso con fascia bianca e patatine
   pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
 
 Ogni pezzo è già orientato per la stampa (Z = direzione di stampa) ed è diviso
@@ -27,7 +28,7 @@ COLORI = {
     "pane": "#C27326", "pane_chiaro": "#D4A866", "carne": "#5A3420", "formaggio": "#F6C12C",
     "insalata": "#5DA93B", "pomodoro": "#D9372B", "prosciutto": "#EFA3A1", "oliva": "#5E7A2A",
     "rosso": "#C8202F", "bianco": "#F4F4F0", "nero": "#202020", "azzurro": "#2E8FD0",
-    "salsa": "#CF3A24", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
+    "salsa": "#CF3A24", "patatina": "#F3B63A", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
 }
 
 # ----------------------------------------------------------------- utilità 2D/3D
@@ -295,6 +296,52 @@ def pizza():
              ("salame", estrudi(salame2d, 0.8, BASE_H + 1.38))]
     return [(c, m.translate([0, -35, 0])) for c, m in parti]
 
+# ----------------------------------------------------------------- PATATINE (3D, a strati)
+def stella(r_est, r_int, c=(0, 0), rot=90):
+    a = np.radians(rot + np.arange(10) * 36)
+    r = np.where(np.arange(10) % 2 == 0, r_est, r_int)
+    return poligono(np.column_stack([c[0] + r * np.cos(a), c[1] + r * np.sin(a)]))
+
+def patatine():
+    H, Z_BIANCO = 38.0, 31.0             # cartoccio rosso fino a 31, fascia bianca fino a 38
+    def rett(w, d, z, r=3.0):
+        return estrudi(arrotonda(CrossSection.square([w, d], center=True), r), 0.01, z)
+    cart = (rett(30, 16, 0) + rett(41, 22.5, H - 0.01)).hull()
+    dentro = (rett(30 - 1.2, 16 - 1.2, 0) + rett(41 - 1.2, 22.5 - 1.2, H - 0.01)).hull()
+    guscio = cart - dentro                                  # pelle di 0,6 mm per le incisioni
+    def prisma_xz(cs2d, lato):                              # forma 2D nel piano XZ, attraverso metà Y
+        m = Manifold.extrude(cs2d, 30).rotate([90, 0, 0])    # estrusione verso -Y
+        return m if lato < 0 else m.mirror([0, 1, 0])
+    # davanti: tre stelle come nel logo; retro: logo PIN-UP (specchiato per leggerlo da dietro)
+    stelle = stella(4.2, 1.8, (-9, 19), 90) + stella(5.6, 2.4, (0, 22), 90) + stella(4.2, 1.8, (9, 19), 90)
+    cart = cart - (guscio ^ prisma_xz(stelle, -1))
+    logo = logo_2d(33).mirror([1, 0]).translate([0, 17.5])
+    cart = cart - (guscio ^ prisma_xz(logo, +1))
+    # vano in alto (bordo di 1,6 mm) da cui escono le patatine
+    vano = (rett(41 - 3.2, 22.5 - 3.2, H - 6) + rett(41 - 3.2, 22.5 - 3.2, H + 1)).hull()
+    cart = cart - vano
+    # patatine: bastoncini 4x4 di altezze e inclinazioni diverse
+    rng = np.random.default_rng(11)
+    pos = [(-14, -5), (-14, 3), (-9, -1), (-9, 6), (-4, -6), (-2.6, 0.5), (2.6, 0.5), (4, -6), (4, 6.5),
+           (9, -2), (9, 5.5), (14, -5), (14, 2.5), (-4, 6.5), (0, -7.5)]
+    alti = {(-2.6, 0.5): 27, (2.6, 0.5): 27}
+    fritte = Manifold()
+    for (x, y) in pos:
+        L = alti.get((x, y), rng.uniform(12, 23) - abs(x) * 0.25)
+        lung = L + 9
+        st = Manifold.cube([4, 4, lung], center=True).translate([0, 0, lung / 2])
+        tilt = (0, 0) if (x, y) in alti else (rng.uniform(-9, 9) + x * 0.5, rng.uniform(-7, 7))
+        st = st.rotate([tilt[1], tilt[0], rng.uniform(-25, 25)]).translate([x, y, H - 7])
+        fritte = fritte + st
+    cima = H - 7 + 27 + 9
+    anello = Manifold.revolve(cerchio(1.6, (4.2, 0)), 0, 360).rotate([90, 0, 0]).translate([0, 0.5, cima + 3.0])
+    tutto = cart + fritte + anello
+    big = 200
+    fascia = lambda z0, z1: Manifold.cube([big, big, z1 - z0]).translate([-big / 2, -big / 2, z0])
+    return [("rosso", tutto ^ fascia(-1, Z_BIANCO)),
+            ("bianco", tutto ^ fascia(Z_BIANCO, H)),
+            ("patatina", tutto ^ fascia(H, 120))]
+
 # ----------------------------------------------------------------- export
 def unisci_per_colore(parti):
     out = {}
@@ -325,7 +372,7 @@ def main():
     cartella = os.path.join(QUI, "parti"); os.makedirs(cartella, exist_ok=True)
     fq = os.path.join(cartella, "quote.json")
     tutti = json.load(open(fq)) if os.path.exists(fq) else {}
-    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza)]:
+    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("patatine", patatine)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
         tutti[nome] = salva(nome, f(), cartella)
     json.dump(tutti, open(fq, "w"), indent=1)

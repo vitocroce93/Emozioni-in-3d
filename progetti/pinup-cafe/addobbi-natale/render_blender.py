@@ -97,7 +97,7 @@ def filo(sopra, lungh=3.0):
 if VISTA in ("fronte", "retro"):
     v, objs, piatto = importa(NOME)
     if VISTA == "retro":
-        if piatto: v.rotation_euler.z = math.radians(180)
+        if piatto or NOME == "patatine": v.rotation_euler.z = math.radians(180)
         else: v.rotation_euler = Euler((0, math.radians(180), 0))   # capovolto: si vede il fondo
     c, dim = centro_ingombro(objs)
     for o in [v]: v.location -= c
@@ -105,7 +105,9 @@ if VISTA in ("fronte", "retro"):
     mondo("#FBF6EE", 0.55)
     sfondo("#F3E9DA")
     r = max(dim) * 2.9
-    if NOME in ("hamburger", "sandwich") and VISTA == "fronte":
+    if NOME == "patatine":
+        camera((r * 0.18, -r * 0.95, r * 0.22), (0, 0, 0), 85)
+    elif NOME in ("hamburger", "sandwich") and VISTA == "fronte":
         camera((r * 0.15, -r * 0.95, r * (0.30 if NOME == "hamburger" else 0.42)), (0, 0, -0.02), 85)
     elif NOME in ("hamburger", "sandwich"):
         camera((0.0, -r * 0.55, r * 0.85), (0, 0, 0), 85)
@@ -115,13 +117,13 @@ if VISTA in ("fronte", "retro"):
     luce_area("fill", (0.9, -0.6, 0.2), 25, 1.2, (0.9, 0.95, 1))
     luce_area("rim", (0.2, 1.0, 0.9), 35, 0.6)
 else:  # gruppo: tutti appesi su sfondo verde scuro
-    disp = [("hamburger", -1.70, 0.10), ("polpo", -0.85, -0.14), ("pizza", 0.0, 0.08), ("sandwich", 0.85, 0.12), ("pesciolino", 1.68, -0.12)]
+    disp = [("hamburger", -2.10, 0.10), ("polpo", -1.27, -0.14), ("patatine", -0.42, 0.10), ("pizza", 0.42, -0.06), ("sandwich", 1.27, 0.12), ("pesciolino", 2.10, -0.12)]
     for nome, x, z in disp:
         v, objs, piatto = importa(nome)
         c, dim = centro_ingombro(objs)
         v.location -= c
         v.location += Vector((x, 0, z))
-        v.rotation_euler.z += math.radians({"hamburger": 20, "polpo": -8, "pizza": 6, "sandwich": 10, "pesciolino": -12}[nome])
+        v.rotation_euler.z += math.radians({"hamburger": 20, "polpo": -8, "pizza": 6, "patatine": 25, "sandwich": 10, "pesciolino": -12}[nome])
         c, dim = centro_ingombro(objs)
         filo(Vector((c.x, c.y, c.z + dim.z / 2 - 0.01)))
     mondo("#0E2A1C", 0.4)
@@ -135,8 +137,8 @@ else:  # gruppo: tutti appesi su sfondo verde scuro
         em.inputs[0].default_value = hex2rgb(random.choice(["#FFD27A", "#FFB347", "#FFF1C1"])); em.inputs[1].default_value = 18
         m.node_tree.links.new(em.outputs[0], n["Material Output"].inputs[0])
         bpy.context.object.data.materials.append(m)
-    cam = camera((0.0, -6.6, 0.25), (0.0, 0, 0.0), 50)
-    cam.data.dof.use_dof = True; cam.data.dof.focus_distance = 6.6; cam.data.dof.aperture_fstop = 0.9
+    cam = camera((0.0, -7.8, 0.25), (0.0, 0, 0.0), 50)
+    cam.data.dof.use_dof = True; cam.data.dof.focus_distance = 7.8; cam.data.dof.aperture_fstop = 0.9
     luce_area("key", (-2.0, -3.0, 2.4), 900, 2.5, (1, 0.93, 0.82))
     luce_area("fill", (2.6, -2.4, 0.4), 320, 3.0, (0.85, 0.92, 1))
     luce_area("rim", (0.0, 2.0, 2.5), 400, 2.5)
