@@ -7,10 +7,10 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
   patatine   - 3D, cartoccio rosso con fascia bianca e patatine
-  pizza      - piatto, spicchio a strati (impasto, formaggio, salame)
+  pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
 
-Regola per gli addobbi piatti: i colori si susseguono dal basso verso l'alto
-senza mai tornare a un colore già usato -> al massimo 2 cambi filamento.
+Regola: in ogni strato di stampa c'è UN SOLO colore (i colori possono ripetersi
+nelle fasce successive) e ogni fascia dura il più possibile.
 
 Ogni pezzo è già orientato per la stampa (Z = direzione di stampa) ed è diviso
 in parti per colore. Le parti di ogni addobbo occupano fasce di quota separate,
@@ -31,7 +31,7 @@ COLORI = {
     "pane": "#C27326", "pane_chiaro": "#D4A866", "carne": "#5A3420", "formaggio": "#F6C12C",
     "insalata": "#5DA93B", "pomodoro": "#D9372B", "prosciutto": "#EFA3A1", "oliva": "#5E7A2A",
     "rosso": "#C8202F", "bianco": "#F4F4F0", "nero": "#202020", "azzurro": "#2E8FD0",
-    "salsa": "#CF3A24", "patatina": "#F3B63A", "impasto": "#E2AE52", "formaggio_scuro": "#D9821A", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
+    "salsa": "#CF3A24", "patatina": "#F3B63A", "impasto": "#D9A04E", "formaggio_scuro": "#D9821A", "mozzarella": "#F6D257", "salame": "#8A1D1A",
 }
 
 # ----------------------------------------------------------------- utilità 2D/3D
@@ -178,11 +178,11 @@ def sandwich():
     parti.append(("insalata", insal))
     parti.append(("pane_chiaro", fetta_pane(pane2d, 6.0, z))); z += 6.0
     # stecchino al baricentro con oliva e anellino in cima: si appende da qui
-    stecco = Manifold.cylinder(16, 1.2, 1.2, 24).translate([0, 0, z - 1])
+    stecco = Manifold.cylinder(15, 1.2, 1.2, 24).translate([0, 0, z - 0.01])   # appoggiato: niente verde negli strati del pane
     oliva = Manifold.sphere(1.0, 40).scale([4.6, 4.6, 5.4]).translate([0, 0, z + 9.5])
     anello = Manifold.revolve(cerchio(1.6, (4.0, 0)), 0, 360).rotate([90, 0, 0]).translate([0, 0, z + 9.5 + 5.4 + 3.6])
     parti.append(("oliva", stecco + oliva + anello))
-    return unisci_per_colore(parti)
+    return parti   # non unire: i due pani stanno in fasce di quota diverse
 
 def ondulato_triangolo(lato, amp, onde_per_lato):
     return increspa(triangolo(lato, 7), amp, onde_per_lato * 3)
@@ -302,20 +302,22 @@ def pizza():
     spicchio = arrotonda(spicchio.offset(1.0, R), 2.2)
     foro_c = (0, 66.0)
     foro = cerchio(1.7, foro_c)
-    # strati in sequenza, senza tornare a un colore già usato (2 soli cambi):
-    #   giallo chiaro (impasto) 0-4  ->  giallo scuro (formaggio) 4-4.8  ->  rosso (salame) 4.8-5.6
-    mozz2d = increspa(settore(61.0, ANG).offset(-2.4, R), 1.6, 15, seme=4)
+    # un solo colore per strato; i colori possono ripetersi:
+    #   impasto 0-4  ->  salsa (rosso) 4-4.6  ->  mozzarella (giallo) 4.6-5.4  ->  salame (stesso rosso) 5.4-6.2
+    salsa2d = settore(62.5, ANG).offset(-1.4, R) ^ spicchio
+    mozz2d = increspa(settore(60.0, ANG).offset(-3.2, R), 1.6, 15, seme=4)
     fette = [((-8, 50), 6.2), ((11, 47.5), 5.8), ((-2.5, 34), 5.6), ((3.5, 19.5), 4.2)]
     salame2d = CrossSection()
     for c, r in fette:
         salame2d = salame2d + cerchio(r, c)
-    mozz2d = (mozz2d + salame2d.offset(1.2, R)) ^ spicchio.offset(-1.8, R)   # il salame poggia sempre sul formaggio
+    mozz2d = (mozz2d + salame2d.offset(1.2, R)) ^ salsa2d.offset(-0.8, R)   # il salame poggia sempre sulla mozzarella
     salame2d = salame2d ^ mozz2d.offset(-0.6, R)
     base = estrudi(spicchio - foro, BASE_H)
     base = incidi_logo_sotto(base, spicchio - settore(64, ANG + 10).offset(-30, R) - foro.offset(2, R), 30, (0, 49))
     parti = [("impasto", base),
-             ("formaggio_scuro", estrudi(mozz2d, RILIEVO1 - 0.2, BASE_H - 0.01)),
-             ("salame", estrudi(salame2d, RILIEVO2, BASE_H + RILIEVO1 - 0.22))]
+             ("salsa", estrudi(salsa2d, 0.6, BASE_H - 0.01)),
+             ("mozzarella", estrudi(mozz2d, 0.8, BASE_H + 0.59)),
+             ("salsa", estrudi(salame2d, 0.8, BASE_H + 1.38))]
     return [(c, m.translate([0, -35, 0])) for c, m in parti]
 
 # ----------------------------------------------------------------- PATATINE (3D, a strati)
@@ -364,6 +366,78 @@ def patatine():
             ("bianco", tutto ^ fascia(Z_BIANCO, H)),
             ("patatina", tutto ^ fascia(H, 120))]
 
+# ----------------------------------------------------------------- 3MF di stampa
+import zipfile
+
+def _mesh_xml(m):
+    me = m.to_mesh()
+    V = np.asarray(me.vert_properties)[:, :3]; F = np.asarray(me.tri_verts)
+    v = "".join(f'<vertex x="{x:.6f}" y="{y:.6f}" z="{z:.6f}"/>' for x, y, z in V)
+    f = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in F)
+    return f"<mesh><vertices>{v}</vertices><triangles>{f}</triangles></mesh>"
+
+def scrivi_3mf(percorso, oggetti):
+    """oggetti: lista di (nome, [(nome_parte, colore, Manifold)], (x, y)).
+    Ogni oggetto ha le parti come componenti (nello slicer: un oggetto con più parti)."""
+    cols = list(COLORI); mats = "".join(f'<base name="{c}" displaycolor="{COLORI[c]}FF"/>' for c in cols)
+    res, build, oid = [], [], 2
+    for nome, parti, (tx, ty) in oggetti:
+        ids = []
+        for np_, col, m in parti:
+            res.append(f'<object id="{oid}" name="{nome}_{np_}" type="model" pid="1" pindex="{cols.index(col)}">{_mesh_xml(m)}</object>')
+            ids.append(oid); oid += 1
+        comps = "".join(f'<component objectid="{i}"/>' for i in ids)
+        res.append(f'<object id="{oid}" name="{nome}" type="model"><components>{comps}</components></object>')
+        build.append(f'<item objectid="{oid}" transform="1 0 0 0 1 0 0 0 1 {tx:.2f} {ty:.2f} 0"/>'); oid += 1
+    model = ('<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="it-IT" '
+             'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+             f'<resources><basematerials id="1">{mats}</basematerials>{"".join(res)}</resources>'
+             f'<build>{"".join(build)}</build></model>')
+    ct = ('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+          '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
+    rels = ('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+    with zipfile.ZipFile(percorso, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", ct); z.writestr("_rels/.rels", rels); z.writestr("3D/3dmodel.model", model)
+
+NOMI_KIT = {"hamburger": ["pane_sotto", "carne", "formaggio", "insalata", "pomodoro", "pane_sopra"]}
+
+def cambi_colore(parti, strato=0.2):
+    """Controlla che ogni strato abbia un solo colore e restituisce le fasce [(colore, z_da, z_a)]."""
+    fasce = []
+    for col, m in parti:
+        b = m.bounding_box(); z0, z1 = round(b[2] / strato) * strato, round(b[5] / strato) * strato
+        fasce.append((col, round(z0, 2), round(z1, 2)))
+    fasce.sort(key=lambda f: f[1])
+    for (c1, a1, b1), (c2, a2, b2) in zip(fasce, fasce[1:]):
+        assert b1 <= a2 + 1e-6, f"due colori nello stesso strato: {c1} {a1}-{b1} e {c2} {a2}-{b2}"
+    unite = []
+    for f in fasce:
+        if unite and unite[-1][0] == f[0] and abs(unite[-1][2] - f[1]) < 1e-6:
+            unite[-1] = (f[0], unite[-1][1], f[2])
+        else:
+            unite.append(f)
+    return unite
+
+def esporta_stampa(nome, parti, cartella):
+    os.makedirs(cartella, exist_ok=True)
+    if nome in NOMI_KIT:   # ogni pezzo è un oggetto a sé: si stampa solo quello che serve
+        ogg = []
+        for i, ((col, m), np_) in enumerate(zip(parti, NOMI_KIT[nome])):
+            b = m.bounding_box()
+            m0 = m.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+            ogg.append((f"{nome}_{np_}", [(np_, col, m0)], (((i % 3) - 1) * 75.0, (i // 3) * 75.0 - 37.5)))
+            scrivi_3mf(os.path.join(cartella, f"{nome}_{i + 1}_{np_}.3mf"), [ogg[-1][:2] + ((0, 0),)])
+        scrivi_3mf(os.path.join(cartella, f"{nome}_tutti_i_pezzi.3mf"), ogg)
+        return {"tipo": "a pezzi", "pezzi": [{"pezzo": n, "colore": c} for (c, _), n in zip(parti, NOMI_KIT[nome])]}
+    fasce = cambi_colore(parti)
+    unite = {}
+    for col, m in parti: unite[col] = unite[col] + m if col in unite else m
+    scrivi_3mf(os.path.join(cartella, f"{nome}.3mf"), [(nome, [(c, c, m) for c, m in unite.items()], (0, 0))])
+    return {"tipo": "a strati", "fasce": fasce,
+            "cambi_a_mm": [f[1] for f in fasce[1:]]}
+
 # ----------------------------------------------------------------- export
 def unisci_per_colore(parti):
     out = {}
@@ -398,8 +472,10 @@ def main():
     tutti = json.load(open(fq)) if os.path.exists(fq) else {}
     for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("patatine", patatine)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
-        tutti[nome] = salva(nome, f(), cartella)
+        parti = f()
+        tutti[nome] = salva(nome, parti, cartella)
         tutti[nome]["kit"] = nome in KIT
+        tutti[nome]["stampa"] = esporta_stampa(nome, parti, os.path.join(QUI, "stampa"))
     json.dump(tutti, open(fq, "w"), indent=1)
 
 if __name__ == "__main__":
