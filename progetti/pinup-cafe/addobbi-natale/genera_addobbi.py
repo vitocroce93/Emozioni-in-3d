@@ -6,6 +6,7 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   sandwich   - 3D, tramezzino triangolare a strati con stecchino e oliva
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
+  pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
 
 Ogni pezzo è già orientato per la stampa (Z = direzione di stampa) ed è diviso
 in parti per colore. Le parti di ogni addobbo occupano fasce di quota separate,
@@ -26,6 +27,7 @@ COLORI = {
     "pane": "#C27326", "pane_chiaro": "#D4A866", "carne": "#5A3420", "formaggio": "#F6C12C",
     "insalata": "#5DA93B", "pomodoro": "#D9372B", "prosciutto": "#EFA3A1", "oliva": "#5E7A2A",
     "rosso": "#C8202F", "bianco": "#F4F4F0", "nero": "#202020", "azzurro": "#2E8FD0",
+    "salsa": "#CF3A24", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
 }
 
 # ----------------------------------------------------------------- utilità 2D/3D
@@ -159,7 +161,10 @@ def sandwich():
     return unisci_per_colore(parti)
 
 def ondulato_triangolo(lato, amp, onde_per_lato):
-    base = triangolo(lato, 7)
+    return increspa(triangolo(lato, 7), amp, onde_per_lato * 3)
+
+def increspa(base, amp, k, fase=0.0, seme=None):
+    """Increspa il contorno di una forma convessa lungo la normale (k onde in tutto)."""
     pts = []
     poly = base.to_polygons()[0]
     poly = np.array(poly)
@@ -171,8 +176,11 @@ def ondulato_triangolo(lato, amp, onde_per_lato):
     T = np.roll(P, -1, 0) - np.roll(P, 1, 0); N = np.column_stack([T[:, 1], -T[:, 0]])
     N /= np.linalg.norm(N, axis=1)[:, None]
     if CrossSection([P + N * 0.5]).area() < CrossSection([P]).area(): N = -N
-    k = onde_per_lato * 3
-    return CrossSection([P + N * (amp * np.sin(2 * np.pi * k * ss / tot))[:, None]])
+    onda = np.sin(2 * np.pi * k * ss / tot + fase)
+    if seme is not None:   # gocce irregolari (formaggio fuso)
+        rng = np.random.default_rng(seme)
+        onda = onda * rng.uniform(0.4, 1.3, int(k) + 1)[(k * ss / tot).astype(int)]
+    return CrossSection([P + N * (amp * onda)[:, None]])
 
 # ----------------------------------------------------------------- PIATTI: quote
 BASE_H, RILIEVO1, RILIEVO2 = 4.0, 1.0, 0.8   # base, dettagli bianchi, dettagli neri
@@ -255,6 +263,38 @@ def pesciolino():
     parti = piatto(sagoma, foro, bianchi, neri, 40, (-2, -1), colore_base="azzurro")
     return unisci_per_colore(parti)
 
+
+# ----------------------------------------------------------------- PIZZA (piatto, a strati)
+def settore(r, gradi, n=60):
+    a = np.radians(np.linspace(90 - gradi / 2, 90 + gradi / 2, n))
+    return poligono([(0, 0)] + [(r * np.cos(t), r * np.sin(t)) for t in a])
+
+def pizza():
+    R_, ANG = 70.0, 44.0
+    # spicchio con cornicione bitorzoluto in alto
+    a = np.radians(np.linspace(90 - ANG / 2, 90 + ANG / 2, 90))
+    rr = R_ + 1.1 * np.sin(np.linspace(0, 7 * np.pi, len(a)))
+    spicchio = poligono([(0, 0)] + [(r * np.cos(t), r * np.sin(t)) for r, t in zip(rr, a)])
+    spicchio = arrotonda(spicchio.offset(1.0, R), 2.2)
+    foro_c = (0, 66.0)
+    foro = cerchio(1.7, foro_c)
+    # strati: impasto 0-4, salsa 4-4.6, mozzarella 4.6-5.4, salame 5.4-6.2
+    salsa2d = settore(62.5, ANG).offset(-1.4, R) ^ spicchio
+    mozz2d = increspa(settore(60.0, ANG).offset(-3.2, R), 1.6, 15, seme=4)
+    fette = [((-8, 50), 6.2), ((11, 47.5), 5.8), ((-2.5, 34), 5.6), ((3.5, 19.5), 4.2)]
+    salame2d = CrossSection()
+    for c, r in fette:
+        salame2d = salame2d + cerchio(r, c)
+    mozz2d = (mozz2d + salame2d.offset(1.2, R)) ^ salsa2d.offset(-0.8, R)   # il salame poggia sempre sulla mozzarella
+    salame2d = salame2d ^ mozz2d.offset(-0.6, R)
+    base = estrudi(spicchio - foro, BASE_H)
+    base = incidi_logo_sotto(base, spicchio - settore(64, ANG + 10).offset(-30, R) - foro.offset(2, R), 30, (0, 49))
+    parti = [("pane", base),
+             ("salsa", estrudi(salsa2d, 0.6, BASE_H - 0.01)),
+             ("mozzarella", estrudi(mozz2d, 0.8, BASE_H + 0.59)),
+             ("salame", estrudi(salame2d, 0.8, BASE_H + 1.38))]
+    return [(c, m.translate([0, -35, 0])) for c, m in parti]
+
 # ----------------------------------------------------------------- export
 def unisci_per_colore(parti):
     out = {}
@@ -285,7 +325,7 @@ def main():
     cartella = os.path.join(QUI, "parti"); os.makedirs(cartella, exist_ok=True)
     fq = os.path.join(cartella, "quote.json")
     tutti = json.load(open(fq)) if os.path.exists(fq) else {}
-    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino)]:
+    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
         tutti[nome] = salva(nome, f(), cartella)
     json.dump(tutti, open(fq, "w"), indent=1)

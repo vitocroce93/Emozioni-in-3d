@@ -56,7 +56,7 @@ def importa(addobbo):
     vuoto = bpy.data.objects.new(addobbo, None); bpy.context.collection.objects.link(vuoto)
     for o in objs:
         o.scale = (0.01, 0.01, 0.01); o.location = (0, 0, 0); o.parent = vuoto   # mm -> unità (1 = 10 cm)
-    piatto = addobbo in ("polpo", "pesciolino")
+    piatto = addobbo in ("polpo", "pesciolino", "pizza")
     if piatto:
         vuoto.rotation_euler = Euler((math.radians(90), 0, 0))   # faccia superiore verso -Y (camera)
     return vuoto, objs, piatto
@@ -115,13 +115,13 @@ if VISTA in ("fronte", "retro"):
     luce_area("fill", (0.9, -0.6, 0.2), 25, 1.2, (0.9, 0.95, 1))
     luce_area("rim", (0.2, 1.0, 0.9), 35, 0.6)
 else:  # gruppo: tutti appesi su sfondo verde scuro
-    disp = [("hamburger", -1.32, 0.10), ("polpo", -0.44, -0.12), ("sandwich", 0.44, 0.12), ("pesciolino", 1.30, -0.10)]
+    disp = [("hamburger", -1.70, 0.10), ("polpo", -0.85, -0.14), ("pizza", 0.0, 0.08), ("sandwich", 0.85, 0.12), ("pesciolino", 1.68, -0.12)]
     for nome, x, z in disp:
         v, objs, piatto = importa(nome)
         c, dim = centro_ingombro(objs)
         v.location -= c
         v.location += Vector((x, 0, z))
-        v.rotation_euler.z += math.radians({"hamburger": 20, "polpo": -8, "sandwich": 10, "pesciolino": -12}[nome])
+        v.rotation_euler.z += math.radians({"hamburger": 20, "polpo": -8, "pizza": 6, "sandwich": 10, "pesciolino": -12}[nome])
         c, dim = centro_ingombro(objs)
         filo(Vector((c.x, c.y, c.z + dim.z / 2 - 0.01)))
     mondo("#0E2A1C", 0.4)
@@ -135,8 +135,8 @@ else:  # gruppo: tutti appesi su sfondo verde scuro
         em.inputs[0].default_value = hex2rgb(random.choice(["#FFD27A", "#FFB347", "#FFF1C1"])); em.inputs[1].default_value = 18
         m.node_tree.links.new(em.outputs[0], n["Material Output"].inputs[0])
         bpy.context.object.data.materials.append(m)
-    cam = camera((0.0, -5.6, 0.25), (0.0, 0, 0.0), 50)
-    cam.data.dof.use_dof = True; cam.data.dof.focus_distance = 5.6; cam.data.dof.aperture_fstop = 0.9
+    cam = camera((0.0, -6.6, 0.25), (0.0, 0, 0.0), 50)
+    cam.data.dof.use_dof = True; cam.data.dof.focus_distance = 6.6; cam.data.dof.aperture_fstop = 0.9
     luce_area("key", (-2.0, -3.0, 2.4), 900, 2.5, (1, 0.93, 0.82))
     luce_area("fill", (2.6, -2.4, 0.4), 320, 3.0, (0.85, 0.92, 1))
     luce_area("rim", (0.0, 2.0, 2.5), 400, 2.5)
