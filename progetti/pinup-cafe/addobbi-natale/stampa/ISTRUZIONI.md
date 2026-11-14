@@ -49,6 +49,23 @@ Gioco tra pezzo e sede: **0,25 mm per lato** (parametro `GIOCO` in `genera_addob
 
 Salsa e salame possono uscire dallo stesso piatto rosso. **Montaggio:** salsa nella base, mozzarella nella salsa, fette nella mozzarella; se gli incastri sono lenti, una goccia di colla.
 
+## Tramezzino a pezzi (nessun cambio filamento)
+
+Lo **stecchino fa da perno**: è stampato insieme al pane sotto. È esagonale dove passa negli strati (li tiene allineati) e tondo nei 9 mm che si vedono sopra il pane. In cima c'è una clip a scatto su cui si aggancia l'**oliva** con l'anellino.
+Gioco dei fori: 0,25 mm per lato (`GIOCO`).
+
+| File | Pezzo | Colore |
+|---|---|---|
+| `sandwich_pezzi_1_pane_sotto.3mf` | pane sotto con stecchino e logo sotto | pane chiaro |
+| `sandwich_pezzi_2_prosciutto.3mf` | prosciutto | rosa |
+| `sandwich_pezzi_3_formaggio.3mf` | formaggio | giallo |
+| `sandwich_pezzi_4_insalata.3mf` | insalata | verde |
+| `sandwich_pezzi_5_pane_sopra.3mf` | pane sopra | pane chiaro |
+| `sandwich_pezzi_6_oliva.3mf` | oliva con anellino (base piatta, si stampa in piedi) | verde oliva |
+| `sandwich_pezzi_tutti_i_pezzi.3mf` | i 6 pezzi insieme | – |
+
+**Montaggio:** sullo stecchino infila prosciutto → formaggio → insalata → pane sopra, poi premi l'oliva finché fa *clic*. Si appende dall'anellino dell'oliva: il peso passa tutto dalla clip allo stecchino; per sicurezza una goccia di colla nella sede dell'oliva.
+
 ## Riempimento consigliato
 
 - Addobbi piatti: 20–30%.

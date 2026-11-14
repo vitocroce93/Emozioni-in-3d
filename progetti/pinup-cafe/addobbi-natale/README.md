@@ -16,6 +16,10 @@ Ogni pezzo si stampa in un colore solo; si possono riempire interi piatti dello 
 
 ![Pizza](rendering/pizza_fronte_retro.jpg)
 
+### Tramezzino a pezzi
+
+![Tramezzino a pezzi](rendering/sandwich_pezzi_kit.jpg)
+
 ### Pizza a pezzi
 
 ![Pizza a pezzi](rendering/pizza_pezzi_kit.jpg)
@@ -31,6 +35,7 @@ Base con la sede per la salsa, salsa con la sede per la mozzarella, mozzarella c
 | Polpo | piatto, 5,8 mm | 65 × 73 mm | rosso + dettagli bianchi + dettagli neri |
 | Pesciolino | piatto, 5,8 mm | 71 × 51 mm | azzurro + dettagli bianchi + dettagli neri |
 | Pizza a pezzi | piatto, 7,4 mm | 54 × 71 mm | 4 pezzi a incastro (base, salsa, mozzarella, salame): **nessun cambio filamento** |
+| Tramezzino a pezzi | 3D | 71 × 63 × 47 mm | 6 pezzi; lo stecchino è il perno, l'oliva si aggancia a scatto: **nessun cambio filamento** |
 | Patatine | 3D | 42 × 23 × 76 mm | cartoccio rosso (stelle davanti, logo dietro), fascia bianca, patatine gialle |
 | Pizza | piatto, 6,2 mm | 54 × 71 mm | impasto → rosso (salsa) → giallo (mozzarella) → rosso (salame) |
 

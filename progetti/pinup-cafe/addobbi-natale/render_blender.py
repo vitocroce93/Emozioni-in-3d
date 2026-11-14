@@ -137,8 +137,8 @@ elif VISTA in ("fronte", "retro"):
     if NOME == "patatine":
         camera((r * 0.18, -r * 0.95, r * 0.22), (0, 0, 0), 85)
     elif NOME in ("hamburger", "sandwich") and VISTA == "fronte":
-        camera((r * 0.15, -r * 0.95, r * (0.30 if NOME == "hamburger" else 0.42)), (0, 0, -0.02), 85)
-    elif NOME in ("hamburger", "sandwich"):
+        camera((r * 0.15, -r * 0.95, r * {"hamburger": 0.30, "sandwich": 0.42}.get(NOME, 0.24)), (0, 0, -0.02), 85)
+    elif NOME in ("hamburger", "sandwich", "sandwich_pezzi"):
         camera((0.0, -r * 0.55, r * 0.85), (0, 0, 0), 85)
     else:
         camera((r * 0.22, -r * 0.97, r * 0.12), (0, 0, 0), 85)

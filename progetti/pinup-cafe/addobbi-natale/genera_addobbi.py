@@ -7,6 +7,7 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
   pizza_pezzi- piatto, a incastro: base, salsa, mozzarella e salame stampati a parte
+  sandwich_pezzi - 3D a pezzi: lo stecchino è il perno, l'oliva si aggancia a scatto
   patatine   - 3D, cartoccio rosso con fascia bianca e patatine
   pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
 
@@ -406,6 +407,45 @@ def pizza_pezzi():
     parti = [("impasto", base), ("salsa", salsa), ("mozzarella", mozz), ("salame", salame)]
     return [(c, m.translate([0, -35, 0])) for c, m in parti]
 
+# ----------------------------------------------------------------- TRAMEZZINO A PEZZI
+def sandwich_pezzi():
+    """Pane sotto con lo STECCHINO incorporato: esagonale dentro gli strati (li tiene
+    allineati), tondo dove si vede, e in cima una clip a scatto su cui si aggancia
+    l'oliva con l'anellino. Ogni pezzo si stampa di un solo colore."""
+    lato = 70
+    pane2d = triangolo(lato, 7)
+    AF, D_STECCO, D_CLIP, H_CLIP = 6.0, 4.6, 4.6, 6.0
+    foro = esagono(AF + 2 * GIOCO)
+    H_PANE, H_PR, H_FO, H_IN = 6.0, 2.6, 2.0, 2.8
+    z_pr = H_PANE; z_fo = z_pr + H_PR; z_in = z_fo + H_FO; z_ps = z_in + H_IN; z_top = z_ps + H_PANE
+    z_spalla = z_top + 9.0                       # dove finisce lo stecchino visibile e inizia la clip
+
+    pane_sotto = fetta_pane(pane2d, H_PANE, 0)
+    pane_sotto = incidi_logo_sotto(pane_sotto, pane2d, 38, centro=(0, -1.5))
+    stecco = estrudi(esagono(AF), z_top - H_PANE + 0.01, H_PANE - 0.01) \
+             + Manifold.cylinder(z_spalla - z_top + 0.01, D_STECCO / 2, D_STECCO / 2, 32).translate([0, 0, z_top - 0.01])
+    r, d = D_CLIP / 2, 0.35
+    clip = rivoluzione([(0, 0), (r, 0), (r, 2.8), (r + d, 3.2), (r + d, 4.2), (r - 0.4, H_CLIP), (0, H_CLIP)])
+    clip = clip - Manifold.cube([1.1, 20, H_CLIP], center=True).translate([0, 0, H_CLIP / 2 + 1.0])
+    pane_sotto = pane_sotto + stecco + clip.translate([0, 0, z_spalla])
+
+    prosc = estrudi(ondulato_triangolo(lato + 4.5, 1.3, 6) - foro, H_PR, z_pr)
+    form = estrudi(triangolo(lato + 2, 3).rotate(7) - foro, H_FO, z_fo)
+    insal = estrudi(ondulato_triangolo(lato + 6, 2.4, 6) - foro, H_IN, z_in)
+    pane_sopra = fetta_pane(pane2d, H_PANE, z_ps) - estrudi(cerchio(D_STECCO / 2 + GIOCO) + foro, H_PANE + 2, z_ps - 1)
+
+    # oliva con base piatta (si stampa in piedi), sede della clip e anellino
+    oz = z_spalla
+    oliva = Manifold.sphere(1.0, 48).scale([5.0, 5.0, 6.0]).translate([0, 0, oz + 3.6])
+    oliva = oliva ^ Manifold.cube([30, 30, 30]).translate([-15, -15, oz])
+    rs = r + 0.15
+    sede = rivoluzione([(0, -1), (rs, -1), (rs, 2.6), (rs + d + 0.15, 2.8), (rs + d + 0.15, 4.4),
+                        (rs, 5.0), (rs, H_CLIP + 0.4), (0, H_CLIP + 0.4)])
+    anello = Manifold.revolve(cerchio(1.6, (4.0, 0)), 0, 360).rotate([90, 0, 0]).translate([0, 0, oz + 3.6 + 6.0 + 3.4])
+    oliva = oliva + anello - sede.translate([0, 0, oz])
+    return [("pane_chiaro", pane_sotto), ("prosciutto", prosc), ("formaggio", form),
+            ("insalata", insal), ("pane_chiaro", pane_sopra), ("oliva", oliva)]
+
 # ----------------------------------------------------------------- 3MF di stampa
 import zipfile
 
@@ -442,7 +482,8 @@ def scrivi_3mf(percorso, oggetti):
         z.writestr("[Content_Types].xml", ct); z.writestr("_rels/.rels", rels); z.writestr("3D/3dmodel.model", model)
 
 NOMI_KIT = {"hamburger": ["pane_sotto", "carne", "formaggio", "insalata", "pomodoro", "pane_sopra"],
-            "pizza_pezzi": ["base", "salsa", "mozzarella", "salame"]}
+            "pizza_pezzi": ["base", "salsa", "mozzarella", "salame"],
+            "sandwich_pezzi": ["pane_sotto", "prosciutto", "formaggio", "insalata", "pane_sopra", "oliva"]}
 
 def cambi_colore(parti, strato=0.2):
     """Controlla che ogni strato abbia un solo colore e restituisce le fasce [(colore, z_da, z_a)]."""
@@ -505,13 +546,13 @@ def salva(nome, parti, cartella):
     print(f"{nome:11s} ingombro {b[3]-b[0]:.1f} x {b[4]-b[1]:.1f} x {b[5]-b[2]:.1f} mm  volume {tutto.volume()/1000:.1f} cm3")
     return {"parti": quote, "ingombro_mm": [round(b[3]-b[0], 1), round(b[4]-b[1], 1), round(b[5]-b[2], 1)]}
 
-KIT = {"hamburger", "pizza_pezzi"}   # addobbi stampati a pezzi separati
+KIT = {"hamburger", "pizza_pezzi", "sandwich_pezzi"}   # addobbi stampati a pezzi separati
 
 def main():
     cartella = os.path.join(QUI, "parti"); os.makedirs(cartella, exist_ok=True)
     fq = os.path.join(cartella, "quote.json")
     tutti = json.load(open(fq)) if os.path.exists(fq) else {}
-    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("pizza_pezzi", pizza_pezzi), ("patatine", patatine)]:
+    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("pizza_pezzi", pizza_pezzi), ("sandwich_pezzi", sandwich_pezzi), ("patatine", patatine)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
         parti = f()
         tutti[nome] = salva(nome, parti, cartella)
