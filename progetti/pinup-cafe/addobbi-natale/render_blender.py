@@ -56,7 +56,7 @@ def importa(addobbo):
     vuoto = bpy.data.objects.new(addobbo, None); bpy.context.collection.objects.link(vuoto)
     for o in objs:
         o.scale = (0.01, 0.01, 0.01); o.location = (0, 0, 0); o.parent = vuoto   # mm -> unità (1 = 10 cm)
-    piatto = addobbo in ("polpo", "pesciolino", "pizza")
+    piatto = addobbo in ("polpo", "pesciolino", "pizza", "pizza_pezzi")
     if piatto:
         vuoto.rotation_euler = Euler((math.radians(90), 0, 0))   # faccia superiore verso -Y (camera)
     return vuoto, objs, piatto
@@ -96,10 +96,11 @@ def filo(sopra, lungh=3.0):
 
 if VISTA in ("esploso", "stampa"):
     v, objs, piatto = importa(NOME)
+    v.rotation_euler = Euler((0, 0, 0))          # pezzi sdraiati come si stampano
     bpy.context.view_layer.update()
     if VISTA == "esploso":
         for i, o in enumerate(objs):
-            o.location.z += i * 0.13 + (0.12 if i == len(objs) - 1 else 0)
+            o.location.z += i * (0.10 if piatto else 0.13) + (0.12 if i == len(objs) - 1 and not piatto else 0)
     else:   # pezzi appoggiati sul piatto come si stampano, in griglia 3 x 2
         for i, o in enumerate(objs):
             bpy.context.view_layer.update()
@@ -112,11 +113,13 @@ if VISTA in ("esploso", "stampa"):
         bpy.ops.mesh.primitive_plane_add(size=3.0, location=(0, 0, -dim.z / 2 - 0.001))
         bpy.context.object.data.materials.append(materiale("piatto_stampa", "#2B2B2E", 0.6))
         sfondo("#F3E9DA")
-        camera((0.0, -3.6, 3.2), (0, 0.05, -0.15), 50)
+        D = max(dim.x, dim.y)
+        camera((0.0, -1.25 * D, 1.25 * D), (0, 0.0, -dim.z / 2), 50)
     else:
         sfondo("#F3E9DA")
         r = max(dim) * 2.6
-        camera((r * 0.25, -r * 0.95, r * 0.22), (0, 0, 0), 85)
+        if piatto: camera((r * 0.12, -r * 0.62, r * 0.78), (0, 0, 0), 85)
+        else: camera((r * 0.25, -r * 0.95, r * 0.22), (0, 0, 0), 85)
     luce_area("key", (-1.2, -1.6, 2.2), 260, 1.6, (1, 0.96, 0.9))
     luce_area("fill", (1.6, -1.2, 0.6), 90, 2.0, (0.9, 0.95, 1))
     luce_area("rim", (0.3, 1.6, 1.8), 120, 1.2)

@@ -34,6 +34,21 @@ Consiglio: un piatto pieno di pani (sotto e sopra insieme, stesso colore), poi u
 
 **Montaggio:** sul perno del pane sotto infila carne → formaggio → insalata → pomodoro, poi premi il pane sopra finché la clip fa *clic*. Per renderlo definitivo, una goccia di colla nella sede del pane sopra.
 
+## Pizza a pezzi (nessun cambio filamento)
+
+Quattro pezzi piatti, ognuno di un colore, che si incastrano uno nell'altro: ogni pezzo entra per 0,8 mm nella sede del pezzo sotto e sporge di 0,8 mm.
+Gioco tra pezzo e sede: **0,25 mm per lato** (parametro `GIOCO` in `genera_addobbi.py`, consigliato 0,2-0,3 mm sulla P2S).
+
+| File | Pezzo | Colore | Spessore |
+|---|---|---|---|
+| `pizza_pezzi_1_base.3mf` | base con sede per la salsa e logo sotto | impasto (giallo chiaro) | 5,0 mm |
+| `pizza_pezzi_2_salsa.3mf` | salsa con sede per la mozzarella | rosso | 1,6 mm |
+| `pizza_pezzi_3_mozzarella.3mf` | mozzarella con sedi per il salame | giallo | 1,6 mm |
+| `pizza_pezzi_4_salame.3mf` | 4 fette di salame | rosso (anche lo stesso della salsa) | 1,6 mm |
+| `pizza_pezzi_tutti_i_pezzi.3mf` | i 4 pezzi insieme | – | – |
+
+Salsa e salame possono uscire dallo stesso piatto rosso. **Montaggio:** salsa nella base, mozzarella nella salsa, fette nella mozzarella; se gli incastri sono lenti, una goccia di colla.
+
 ## Riempimento consigliato
 
 - Addobbi piatti: 20–30%.

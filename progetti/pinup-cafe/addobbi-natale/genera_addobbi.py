@@ -6,6 +6,7 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   sandwich   - 3D, tramezzino triangolare a strati con stecchino e oliva
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
+  pizza_pezzi- piatto, a incastro: base, salsa, mozzarella e salame stampati a parte
   patatine   - 3D, cartoccio rosso con fascia bianca e patatine
   pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
 
@@ -366,6 +367,45 @@ def patatine():
             ("bianco", tutto ^ fascia(Z_BIANCO, H)),
             ("patatina", tutto ^ fascia(H, 120))]
 
+# ----------------------------------------------------------------- PIZZA A PEZZI (incastri)
+GIOCO = 0.25        # gioco per lato tra pezzo e sede (P2S: 0,2-0,3 mm)
+
+def pizza_pezzi():
+    """Base con sede per la salsa, salsa con sede per la mozzarella, mozzarella con sedi
+    per il salame. Ogni pezzo si stampa piatto e di un solo colore."""
+    R_, ANG = 70.0, 44.0
+    a = np.radians(np.linspace(90 - ANG / 2, 90 + ANG / 2, 90))
+    rr = R_ + 1.1 * np.sin(np.linspace(0, 7 * np.pi, len(a)))
+    spicchio = arrotonda(poligono([(0, 0)] + [(r * np.cos(t), r * np.sin(t)) for r, t in zip(rr, a)]).offset(1.0, R), 2.2)
+    foro = cerchio(1.7, (0, 66.0))
+    salsa2d = settore(62.5, ANG).offset(-1.4, R) ^ spicchio.offset(-1.2, R)
+    salsa2d = arrotonda(salsa2d, 1.0)
+    # fette di salame sempre intere: il raggio si riduce finché la fetta sta tutta nella mozzarella
+    consentito = salsa2d.offset(-1.6 - 1.4, R)
+    fette = [((-7, 50), 6.0), ((8.5, 47), 5.6), ((-1.5, 34), 5.4), ((0.5, 22), 4.2)]
+    salame2d = CrossSection()
+    for c, r in fette:
+        while r > 2.5 and (cerchio(r, c) - consentito).area() > 0.01:
+            r -= 0.1
+        salame2d = salame2d + cerchio(r, c)
+    mozz2d = increspa(settore(60.0, ANG).offset(-3.2, R), 1.6, 15, seme=4)
+    mozz2d = arrotonda((mozz2d + salame2d.offset(1.6, R)) ^ salsa2d.offset(-1.6, R), 0.6)
+
+    H_BASE, SEDE = 5.0, 0.8        # spessore base, profondità di ogni sede
+    T = 1.6                        # spessore di salsa, mozzarella e salame
+    sede = lambda cs: cs.offset(GIOCO, R)
+    # base: impasto con sede per la salsa, logo inciso sotto
+    base = estrudi(spicchio - foro, H_BASE) - estrudi(sede(salsa2d), SEDE + 1, H_BASE - SEDE)
+    base = incidi_logo_sotto(base, spicchio - settore(64, ANG + 10).offset(-30, R) - foro.offset(2, R), 30, (0, 49))
+    z_s = H_BASE - SEDE
+    salsa = estrudi(salsa2d, T, z_s) - estrudi(sede(mozz2d), SEDE + 1, z_s + T - SEDE)
+    z_m = z_s + T - SEDE
+    mozz = estrudi(mozz2d, T, z_m) - estrudi(sede(salame2d), SEDE + 1, z_m + T - SEDE)
+    z_f = z_m + T - SEDE
+    salame = estrudi(salame2d, T, z_f)
+    parti = [("impasto", base), ("salsa", salsa), ("mozzarella", mozz), ("salame", salame)]
+    return [(c, m.translate([0, -35, 0])) for c, m in parti]
+
 # ----------------------------------------------------------------- 3MF di stampa
 import zipfile
 
@@ -401,7 +441,8 @@ def scrivi_3mf(percorso, oggetti):
     with zipfile.ZipFile(percorso, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", ct); z.writestr("_rels/.rels", rels); z.writestr("3D/3dmodel.model", model)
 
-NOMI_KIT = {"hamburger": ["pane_sotto", "carne", "formaggio", "insalata", "pomodoro", "pane_sopra"]}
+NOMI_KIT = {"hamburger": ["pane_sotto", "carne", "formaggio", "insalata", "pomodoro", "pane_sopra"],
+            "pizza_pezzi": ["base", "salsa", "mozzarella", "salame"]}
 
 def cambi_colore(parti, strato=0.2):
     """Controlla che ogni strato abbia un solo colore e restituisce le fasce [(colore, z_da, z_a)]."""
@@ -464,13 +505,13 @@ def salva(nome, parti, cartella):
     print(f"{nome:11s} ingombro {b[3]-b[0]:.1f} x {b[4]-b[1]:.1f} x {b[5]-b[2]:.1f} mm  volume {tutto.volume()/1000:.1f} cm3")
     return {"parti": quote, "ingombro_mm": [round(b[3]-b[0], 1), round(b[4]-b[1], 1), round(b[5]-b[2], 1)]}
 
-KIT = {"hamburger"}   # addobbi stampati a pezzi separati
+KIT = {"hamburger", "pizza_pezzi"}   # addobbi stampati a pezzi separati
 
 def main():
     cartella = os.path.join(QUI, "parti"); os.makedirs(cartella, exist_ok=True)
     fq = os.path.join(cartella, "quote.json")
     tutti = json.load(open(fq)) if os.path.exists(fq) else {}
-    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("patatine", patatine)]:
+    for nome, f in [("hamburger", hamburger), ("sandwich", sandwich), ("polpo", polpo), ("pesciolino", pesciolino), ("pizza", pizza), ("pizza_pezzi", pizza_pezzi), ("patatine", patatine)]:
         if len(sys.argv) > 1 and nome not in sys.argv[1:]: continue
         parti = f()
         tutti[nome] = salva(nome, parti, cartella)

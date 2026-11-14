@@ -15,6 +15,12 @@ Ogni pezzo si stampa in un colore solo; si possono riempire interi piatti dello 
 - Nessun supporto: il pane sotto ha il bordo inferiore a 45°, il pane sopra si stampa con la parte piatta sul piatto.
 
 ![Pizza](rendering/pizza_fronte_retro.jpg)
+
+### Pizza a pezzi
+
+![Pizza a pezzi](rendering/pizza_pezzi_kit.jpg)
+
+Base con la sede per la salsa, salsa con la sede per la mozzarella, mozzarella con le sedi per le fette di salame. Gioco 0,25 mm per lato (`GIOCO`).
 ![Patatine](rendering/patatine_fronte_retro.jpg)
 ![Albero](rendering/albero_gruppo.jpg)
 
@@ -24,6 +30,7 @@ Ogni pezzo si stampa in un colore solo; si possono riempire interi piatti dello 
 | Tramezzino | 3D | 71 × 63 × 44 mm | pane, prosciutto, formaggio, insalata, pane, oliva |
 | Polpo | piatto, 5,8 mm | 65 × 73 mm | rosso + dettagli bianchi + dettagli neri |
 | Pesciolino | piatto, 5,8 mm | 71 × 51 mm | azzurro + dettagli bianchi + dettagli neri |
+| Pizza a pezzi | piatto, 7,4 mm | 54 × 71 mm | 4 pezzi a incastro (base, salsa, mozzarella, salame): **nessun cambio filamento** |
 | Patatine | 3D | 42 × 23 × 76 mm | cartoccio rosso (stelle davanti, logo dietro), fascia bianca, patatine gialle |
 | Pizza | piatto, 6,2 mm | 54 × 71 mm | impasto → rosso (salsa) → giallo (mozzarella) → rosso (salame) |
 
