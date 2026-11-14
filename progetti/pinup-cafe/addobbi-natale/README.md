@@ -14,7 +14,9 @@ Sei addobbi da 6-8 cm per l'albero, con il logo PIN-UP inciso sul retro.
 | Polpo | piatto, 5,8 mm | 65 × 73 mm | rosso + dettagli bianchi + dettagli neri |
 | Pesciolino | piatto, 5,8 mm | 71 × 51 mm | azzurro + dettagli bianchi + dettagli neri |
 | Patatine | 3D | 42 × 23 × 76 mm | cartoccio rosso (stelle davanti, logo dietro), fascia bianca, patatine gialle |
-| Pizza | piatto, 6,2 mm | 54 × 71 mm | impasto, salsa, mozzarella, salame (salsa e salame possono usare lo stesso rosso) |
+| Pizza | piatto, 5,6 mm | 54 × 71 mm | giallo chiaro (impasto) + giallo scuro (formaggio) + rosso (salame) |
+
+**Regola per gli addobbi piatti:** i colori si susseguono dal basso verso l'alto senza mai tornare a un colore già usato, quindi bastano al massimo 2 cambi filamento (es. rosso → bianco → nero).
 
 Sono **bozze per i rendering**: dopo l'approvazione si preparano i file 3MF di stampa, con le quote dei cambi colore.
 

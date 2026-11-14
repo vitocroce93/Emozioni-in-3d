@@ -7,7 +7,10 @@ Emozioni in 3D - Addobbi di Natale PIN-UP Cafe (6-8 cm) con logo sul retro.
   polpo      - piatto, con cappello di Babbo Natale, dettagli in rilievo
   pesciolino - piatto, dettagli in rilievo
   patatine   - 3D, cartoccio rosso con fascia bianca e patatine
-  pizza      - piatto, spicchio a strati (impasto, salsa, mozzarella, salame)
+  pizza      - piatto, spicchio a strati (impasto, formaggio, salame)
+
+Regola per gli addobbi piatti: i colori si susseguono dal basso verso l'alto
+senza mai tornare a un colore già usato -> al massimo 2 cambi filamento.
 
 Ogni pezzo è già orientato per la stampa (Z = direzione di stampa) ed è diviso
 in parti per colore. Le parti di ogni addobbo occupano fasce di quota separate,
@@ -28,7 +31,7 @@ COLORI = {
     "pane": "#C27326", "pane_chiaro": "#D4A866", "carne": "#5A3420", "formaggio": "#F6C12C",
     "insalata": "#5DA93B", "pomodoro": "#D9372B", "prosciutto": "#EFA3A1", "oliva": "#5E7A2A",
     "rosso": "#C8202F", "bianco": "#F4F4F0", "nero": "#202020", "azzurro": "#2E8FD0",
-    "salsa": "#CF3A24", "patatina": "#F3B63A", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
+    "salsa": "#CF3A24", "patatina": "#F3B63A", "impasto": "#E2AE52", "formaggio_scuro": "#D9821A", "mozzarella": "#F0C24A", "salame": "#8A1D1A",
 }
 
 # ----------------------------------------------------------------- utilità 2D/3D
@@ -279,21 +282,20 @@ def pizza():
     spicchio = arrotonda(spicchio.offset(1.0, R), 2.2)
     foro_c = (0, 66.0)
     foro = cerchio(1.7, foro_c)
-    # strati: impasto 0-4, salsa 4-4.6, mozzarella 4.6-5.4, salame 5.4-6.2
-    salsa2d = settore(62.5, ANG).offset(-1.4, R) ^ spicchio
-    mozz2d = increspa(settore(60.0, ANG).offset(-3.2, R), 1.6, 15, seme=4)
+    # strati in sequenza, senza tornare a un colore già usato (2 soli cambi):
+    #   giallo chiaro (impasto) 0-4  ->  giallo scuro (formaggio) 4-4.8  ->  rosso (salame) 4.8-5.6
+    mozz2d = increspa(settore(61.0, ANG).offset(-2.4, R), 1.6, 15, seme=4)
     fette = [((-8, 50), 6.2), ((11, 47.5), 5.8), ((-2.5, 34), 5.6), ((3.5, 19.5), 4.2)]
     salame2d = CrossSection()
     for c, r in fette:
         salame2d = salame2d + cerchio(r, c)
-    mozz2d = (mozz2d + salame2d.offset(1.2, R)) ^ salsa2d.offset(-0.8, R)   # il salame poggia sempre sulla mozzarella
+    mozz2d = (mozz2d + salame2d.offset(1.2, R)) ^ spicchio.offset(-1.8, R)   # il salame poggia sempre sul formaggio
     salame2d = salame2d ^ mozz2d.offset(-0.6, R)
     base = estrudi(spicchio - foro, BASE_H)
     base = incidi_logo_sotto(base, spicchio - settore(64, ANG + 10).offset(-30, R) - foro.offset(2, R), 30, (0, 49))
-    parti = [("pane", base),
-             ("salsa", estrudi(salsa2d, 0.6, BASE_H - 0.01)),
-             ("mozzarella", estrudi(mozz2d, 0.8, BASE_H + 0.59)),
-             ("salame", estrudi(salame2d, 0.8, BASE_H + 1.38))]
+    parti = [("impasto", base),
+             ("formaggio_scuro", estrudi(mozz2d, RILIEVO1 - 0.2, BASE_H - 0.01)),
+             ("salame", estrudi(salame2d, RILIEVO2, BASE_H + RILIEVO1 - 0.22))]
     return [(c, m.translate([0, -35, 0])) for c, m in parti]
 
 # ----------------------------------------------------------------- PATATINE (3D, a strati)
